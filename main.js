@@ -1,77 +1,102 @@
-//HTTP request get,get/id,post,put/id, delete/id
-async function LoadData() {
-    try {
-        let res = await fetch('http://localhost:3000/posts');
-        let posts = await res.json()
-        let body = document.getElementById("table-body");
-        body.innerHTML = "";
-        for (const post of posts) {
-            body.innerHTML += `<tr>
-                <td>${post.id}</td>
-                <td>${post.title}</td>
-                <td>${post.views}</td>
-                <td><input type='submit' value='delete' onclick='Delete(${post.id})'/></td>
-            </tr>`
-        }
-        return false;
-    } catch (error) {
-        console.log(error);
+const express = require('express')
+const app = express()
+const port = 3000
+let data = [
+    {
+        "id": "1",
+        "title": "a title",
+        "views": 100
+    },
+    {
+        "id": "2",
+        "title": "another title",
+        "views": 200
+    },
+    {
+        "id": "3",
+        "title": "another title",
+        "views": 200
+    },
+    {
+        "id": "4",
+        "title": "chu tu",
+        "views": 900
+    },
+    {
+        "id": "5",
+        "title": "to",
+        "views": 900
+    },
+    {
+        "id": "6",
+        "title": "hahah",
+        "views": 999
+    },
+    {
+        "id": "7",
+        "title": "arap",
+        "views": 999,
+        "isDeleted": "true"
+    },
+    {
+        "id": "99",
+        "title": "909999",
+        "views": 99
+    },
+    {
+        "id": "9999",
+        "title": "99",
+        "views": 999
+    },
+    {
+        "id": "9999",
+        "title": "99",
+        "views": 999,
+        "isDeleted": true
     }
-
-}//
-async function Save() {
-    let id = document.getElementById("id_txt").value;
-    let title = document.getElementById("title_txt").value;
-    let views = document.getElementById("view_txt").value;
-    let getItem = await fetch("http://localhost:3000/posts/" + id);
-    if (getItem.ok) {
-        //co item->put
-        let res = await fetch('http://localhost:3000/posts/' + id,
-            {
-                method: 'PUT',
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(
-                    {
-                        title: title,
-                        views: views
-                    }
-                )
-            })
-        if (res.ok) {
-            console.log("edit du lieu thanh cong");
+]
+//get all
+//title=a&maxview=400&minview=50&limit=4&page=2
+app.get('/api/v1/products', (req, res) => {
+    let titleQ = req.query.title ? req.query.title : '';
+    let maxView = req.query.maxview ? req.query.maxview : 1E6;
+    let minView = req.query.minview ? req.query.minview : 0;
+    let limit = req.query.limit ? req.query.limit : 5;
+    let page = req.query.page ? req.query.page : 1;
+    let result = data.filter(
+        function (e) {
+            return !(e.isDeleted) && e.title.includes(titleQ)
+                && e.views >= minView && e.views <= maxView;
         }
-
+    )
+    result = result.splice(limit * (page - 1), limit);
+    res.send(result)
+})
+app.get('/api/v1/products/:ids', (req, res) => {
+    let id = req.params.ids;
+    let result = data.filter(
+        function (e) {
+            return !(e.isDeleted) && e.id == id
+        }
+    )
+    if (result.length > 0) {
+        res.send(result[0])
     } else {
-        let res = await fetch('http://localhost:3000/posts',
-            {
-                method: 'POST',
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(
-                    {
-                        id: id,
-                        title: title,
-                        views: views
-                    }
-                )
-            })
+        res.status(404).send({
+            message: "ID NOT FOUND"
+        })
     }
-    if (res.ok) {
-        console.log("them du lieu thanh cong");
-    }
-    LoadData();
 
-}
-async function Delete(id) {
-    let res = await fetch('http://localhost:3000/posts/' + id, {
-        method: 'Delete'
-    });
-    if (res.ok) {
-        console.log("xoa thanh cong");
-    }
-    LoadData();
-}
-LoadData();
+})
+app.get('/api/v1/products/2', (req, res) => {
+    res.send('Hello World! 1')
+})
+app.put('/api/v1/products/1', (req, res) => {
+    res.send('Hello World! 1')
+})
+app.delete('/api/v1/products/1', (req, res) => {
+    res.send('Hello World! 1')
+})
+app.listen(port, () => {
+    console.log(`Example app listening on port ${port}`)
+})
