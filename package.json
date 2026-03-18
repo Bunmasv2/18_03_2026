@@ -13,9 +13,23 @@
     "express-validator": "^7.3.1",
     "hbs": "~4.0.4",
     "http-errors": "~1.6.3",
+    "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.4",
     "morgan": "~1.9.1",
     "nodemon": "^3.1.11",
     "slugify": "^1.6.6"
-  }
+  },
+  "main": "app.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Bunmasv2/18_03_2026.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Bunmasv2/18_03_2026/issues"
+  },
+  "homepage": "https://github.com/Bunmasv2/18_03_2026#readme",
+  "description": ""
 }

@@ -2,6 +2,8 @@ let express = require('express');
 let router = express.Router()
 let userController = require('../controllers/users')
 let bcrypt = require('bcrypt')
+let authHandler = require('../utils/authHandler')
+const { body, validationResult } = require('express-validator');
 
 router.post('/register', async function (req, res, next) {
     try {
@@ -35,8 +37,10 @@ router.post('/login', async function (req, res, next) {
         if (bcrypt.compareSync(password, user.password)) {
             user.loginCount = 0;
             await user.save()
+            const token = authHandler.generateToken({ id: user._id, username: user.username });
             res.send({
-                id: user._id
+                token: token,
+                user: { id: user._id, username: user.username }
             })
         } else {
             user.loginCount++;
@@ -55,4 +59,68 @@ router.post('/login', async function (req, res, next) {
         })
     }
 })
+
+router.post('/changepassword', authHandler.authenticate, [
+    body('oldpassword').notEmpty().withMessage('Old password is required'),
+    body('newpassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters long')
+        .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('New password must contain at least one lowercase letter, one uppercase letter, and one number')
+], async function (req, res, next) {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { oldpassword, newpassword } = req.body;
+        const userId = req.user.id;
+        const user = await userController.GetAnUserById(userId);
+
+        if (!user) {
+            return res.status(404).send({ message: 'User not found' });
+        }
+
+        if (!bcrypt.compareSync(oldpassword, user.password)) {
+            return res.status(400).send({ message: 'Old password is incorrect' });
+        }
+
+        const hashedNewPassword = bcrypt.hashSync(newpassword, 10);
+        user.password = hashedNewPassword;
+        await user.save();
+
+        res.send({ message: 'Password changed successfully' });
+    } catch (error) {
+        res.status(500).send({
+            message: error.message
+        })
+    }
+})
+
+router.get('/me', authHandler.authenticate, async function (req, res, next) {
+    try {
+        const userId = req.user.id;
+        const user = await userController.GetAnUserById(userId);
+
+        if (!user) {
+            return res.status(404).send({ message: 'User not found' });
+        }
+
+        // Trả về thông tin cá nhân, loại bỏ password và các trường nhạy cảm
+        const userInfo = {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            fullName: user.fullName,
+            avatarUrl: user.avatarUrl,
+            status: user.status,
+            role: user.role
+        };
+
+        res.send(userInfo);
+    } catch (error) {
+        res.status(500).send({
+            message: error.message
+        })
+    }
+})
+
 module.exports = router
